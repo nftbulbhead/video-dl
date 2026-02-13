@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Downloader</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f0f;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{max-width:720px;width:100%}
+h1{font-size:1.75rem;font-weight:700;text-align:center;margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.tile{background:#1a1a2e;border:2px solid rgba(255,255,255,.06);border-radius:16px;padding:32px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;user-select:none}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.tile.active{border-color:var(--accent)}
+.tile .logo{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.tile .logo svg{width:48px;height:48px}
+.tile .name{font-size:.95rem;font-weight:600;color:#ccc}
+.tile.active .name{color:#fff}
+
+/* Platform accent colors */
+.tile[data-platform=twitter]{--accent:#1DA1F2}
+.tile[data-platform=youtube]{--accent:#FF0000}
+.tile[data-platform=shorts]{--accent:#FF0000}
+
+.panel{background:#1a1a2e;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:36px 32px;box-shadow:0 8px 32px rgba(0,0,0,.4);display:none}
+.panel.visible{display:block}
+.panel-title{font-size:1.1rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel-title svg{width:24px;height:24px}
+.input-group{display:flex;gap:10px}
+input[type=text]{flex:1;background:#12121e;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px 16px;color:#fff;font-size:.95rem;outline:none;transition:border .2s}
+input[type=text]:focus{border-color:var(--accent,#1DA1F2)}
+input[type=text]::placeholder{color:#555}
+button{background:var(--accent,#1DA1F2);color:#fff;border:none;border-radius:10px;padding:14px 24px;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s,opacity .2s;white-space:nowrap}
+button:hover{filter:brightness(.85)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{margin-top:20px;padding:16px;border-radius:10px;background:rgba(255,255,255,.04);display:none;text-align:center;transition:all .3s}
+.status.visible{display:block}
+.status.error{background:rgba(255,60,60,.1);color:#ff6b6b}
+.spinner{display:inline-block;width:20px;height:20px;border:2.5px solid rgba(255,255,255,.15);border-top-color:var(--accent,#1DA1F2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dl-link{display:inline-block;margin-top:12px;background:var(--accent,#1DA1F2);color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;transition:background .2s}
+.dl-link:hover{filter:brightness(.85)}
+.video-preview{margin-top:16px;width:100%;max-width:400px;border-radius:10px;background:#000;margin-left:auto;margin-right:auto;display:block}
+.dl-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.ios-hint{color:#888;font-size:.8rem;margin-top:8px}
+@media(max-width:560px){.grid{grid-template-columns:1fr 1fr 1fr;gap:10px}.tile{padding:24px 12px}.tile .logo svg{width:36px;height:36px}.panel{padding:28px 18px}.input-group{flex-direction:column}button{width:100%}.video-preview{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Video Downloader</h1>
+  <div class="grid">
+    <div class="tile" data-platform="twitter" onclick="selectPlatform('twitter')">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="#1DA1F2"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </div>
+      <span class="name">Twitter / X</span>
+    </div>
+    <div class="tile" data-platform="youtube" onclick="selectPlatform('youtube')">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12z"/></svg>
+      </div>
+      <span class="name">YouTube</span>
+    </div>
+    <div class="tile" data-platform="shorts" onclick="selectPlatform('shorts')">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="#FF0000"><path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.93c-1.83.97-2.53 3.24-1.56 5.07.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25z"/></svg>
+      </div>
+      <span class="name">YT Shorts</span>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-twitter" style="--accent:#1DA1F2">
+    <div class="panel-title">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="#1DA1F2"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      Twitter / X
+    </div>
+    <form onsubmit="handleSubmit(event,'twitter')">
+      <div class="input-group">
+        <input type="text" id="url-twitter" placeholder="https://x.com/user/status/..." autocomplete="off" required>
+        <button type="submit" id="btn-twitter">Download</button>
+      </div>
+    </form>
+    <div class="status" id="status-twitter"></div>
+  </div>
+
+  <div class="panel" id="panel-youtube" style="--accent:#FF0000">
+    <div class="panel-title">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12z"/></svg>
+      YouTube
+    </div>
+    <form onsubmit="handleSubmit(event,'youtube')">
+      <div class="input-group">
+        <input type="text" id="url-youtube" placeholder="https://youtube.com/watch?v=..." autocomplete="off" required>
+        <button type="submit" id="btn-youtube">Download</button>
+      </div>
+    </form>
+    <div class="status" id="status-youtube"></div>
+  </div>
+
+  <div class="panel" id="panel-shorts" style="--accent:#FF0000">
+    <div class="panel-title">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="#FF0000"><path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.93c-1.83.97-2.53 3.24-1.56 5.07.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25z"/></svg>
+      YT Shorts
+    </div>
+    <form onsubmit="handleSubmit(event,'shorts')">
+      <div class="input-group">
+        <input type="text" id="url-shorts" placeholder="https://youtube.com/shorts/..." autocomplete="off" required>
+        <button type="submit" id="btn-shorts">Download</button>
+      </div>
+    </form>
+    <div class="status" id="status-shorts"></div>
+  </div>
+</div>
+
+<script>
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&'ontouchend' in document);
+const validators={
+  twitter:/^https?:\/\/(x|twitter)\.com\/\w+\/status\/\d+/i,
+  youtube:/^https?:\/\/(www\.)?(youtube\.com\/(watch\?.*v=|embed\/|v\/)|youtu\.be\/)/i,
+  shorts:/^https?:\/\/(www\.)?youtube\.com\/shorts\//i
+};
+const errorMsgs={
+  twitter:'Please enter a valid Twitter/X URL.',
+  youtube:'Please enter a valid YouTube URL.',
+  shorts:'Please enter a valid YouTube Shorts URL.'
+};
+
+let activePlatform=null;
+
+function selectPlatform(p){
+  document.querySelectorAll('.tile').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(t=>t.classList.remove('visible'));
+  document.querySelector(`.tile[data-platform="${p}"]`).classList.add('active');
+  const panel=document.getElementById('panel-'+p);
+  panel.classList.add('visible');
+  panel.querySelector('input').focus();
+  activePlatform=p;
+}
+
+function showStatus(p,html,err){
+  const s=document.getElementById('status-'+p);
+  s.className='status visible'+(err?' error':'');
+  s.innerHTML=html;
+}
+function hideStatus(p){
+  const s=document.getElementById('status-'+p);
+  s.className='status';s.innerHTML='';
+}
+
+function handleSubmit(e,p){
+  e.preventDefault();
+  const input=document.getElementById('url-'+p);
+  const btn=document.getElementById('btn-'+p);
+  const v=input.value.trim();
+
+  // For shorts, also accept regular youtube URLs; for youtube, also accept shorts
+  let valid=false;
+  if(p==='shorts') valid=validators.shorts.test(v)||validators.youtube.test(v);
+  else if(p==='youtube') valid=validators.youtube.test(v)||validators.shorts.test(v);
+  else valid=validators[p].test(v);
+
+  if(!valid){showStatus(p,errorMsgs[p],true);return}
+
+  btn.disabled=true;hideStatus(p);
+  showStatus(p,'<span class="spinner"></span> Starting download\u2026');
+
+  fetch('/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:v})})
+    .then(r=>r.json().then(d=>({ok:r.ok,d})))
+    .then(({ok,d})=>{
+      if(!ok)throw new Error(d.error||d.message||'Request failed');
+      const id=d.id;
+      const poll=setInterval(async()=>{
+        try{
+          const r=await fetch('/api/download/'+id);
+          const s=await r.json();
+          if(!r.ok){clearInterval(poll);showStatus(p,s.error||'Something went wrong.',true);btn.disabled=false;return}
+          if(s.status==='ready'){
+            clearInterval(poll);
+            const fileUrl='/api/download/'+id+'/file';
+            let html='Ready!<br><video class="video-preview" src="'+fileUrl+'" controls playsinline preload="metadata"></video><div class="dl-actions">';
+            if(isIOS){
+              html+='<a class="dl-link" href="'+fileUrl+'" target="_blank">Open Video</a>';
+              html+='</div><p class="ios-hint">Tap &amp; hold the video or use the share button to save</p>';
+            }else{
+              html+='<a class="dl-link" href="'+fileUrl+'" download>Save Video</a>';
+              html+='</div>';
+            }
+            showStatus(p,html);
+            btn.disabled=false;
+          }else if(s.status==='error'){
+            clearInterval(poll);showStatus(p,s.error||'Download failed.',true);btn.disabled=false;
+          }else{
+            showStatus(p,'<span class="spinner"></span> '+(s.status||'Processing\u2026'));
+          }
+        }catch(err){clearInterval(poll);showStatus(p,'Connection lost.',true);btn.disabled=false}
+      },1000);
+    })
+    .catch(err=>{showStatus(p,err.message,true);btn.disabled=false});
+}
+</script>
+</body>
+</html>
