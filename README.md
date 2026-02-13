@@ -1,6 +1,6 @@
-# 🐦 Twitter Video Downloader
+# 🎬 Video Downloader
 
-Download videos from Twitter/X posts. Simple, fast, no BS.
+A clean, fast video downloader supporting **Twitter/X**, **YouTube**, and **YouTube Shorts**. Simple web UI, CLI, and API.
 
 ## Quick Start
 
@@ -13,21 +13,30 @@ bun run src/index.ts
 # → http://localhost:3456
 
 # Or use the CLI
-bun run src/cli.ts <twitter-url> [output-dir]
+bun run src/cli.ts <video-url> [output-dir]
 ```
+
+## Supported Platforms
+
+| Platform | Example URL |
+|----------|------------|
+| Twitter/X | `https://x.com/user/status/123456` |
+| YouTube | `https://youtube.com/watch?v=abc123` |
+| YT Shorts | `https://youtube.com/shorts/abc123` |
 
 ## Usage
 
 ### Web UI
 1. Go to `http://localhost:3456`
-2. Paste a Twitter/X link
-3. Click Download
-4. Get the video
+2. Select the platform
+3. Paste the video link
+4. Click Download
 
 ### CLI
 ```bash
 bun run src/cli.ts https://x.com/user/status/123456
-bun run src/cli.ts https://x.com/user/status/123456 ~/Downloads
+bun run src/cli.ts https://youtube.com/watch?v=abc123 ~/Downloads
+bun run src/cli.ts https://youtube.com/shorts/abc123
 ```
 
 ### API
@@ -46,7 +55,10 @@ curl -O http://localhost:3456/api/download/<id>/file
 
 ## How It Works
 
-Uses Twitter's GraphQL API with guest tokens to extract video URLs, with syndication API as fallback. Downloads the highest quality MP4 available. No yt-dlp dependency needed.
+- **Twitter/X:** Uses Twitter's GraphQL API with guest tokens to extract video URLs, with syndication API as fallback
+- **YouTube/Shorts:** Direct extraction of video streams from YouTube pages
+
+Downloads the highest quality MP4 available. No yt-dlp dependency needed.
 
 ## Stack
 - **Runtime:** Bun

@@ -1,31 +1,35 @@
-# Twitter Video Downloader — Product Plan
+# Video Downloader — Product Plan
 
 ## Vision
-A clean, fast tool to download videos from Twitter/X posts. Start simple, do one thing well.
+A clean, fast tool to download videos from multiple platforms. Start simple, do it well.
+
+## Supported Platforms
+- **Twitter/X** — tweets with video/GIF
+- **YouTube** — standard videos
+- **YouTube Shorts** — short-form vertical videos
 
 ## MVP Scope (v0.1)
-- **Input:** Twitter/X post URL (e.g. `https://x.com/user/status/123456`)
+- **Input:** Video URL from any supported platform
 - **Output:** Direct video file download (best available quality)
 - **Interface:** 
-  1. CLI tool (`twdl <url>`)
-  2. HTTP API endpoint (`POST /download` with `{url}`)
-  3. Simple web UI (paste link, get video)
+  1. CLI tool (`bun run src/cli.ts <url>`)
+  2. HTTP API endpoint (`POST /api/download` with `{url}`)
+  3. Simple web UI (select platform, paste link, get video)
 
 ## Technical Approach
-- **Runtime:** Node.js/Bun (matches our existing stack)
-- **Video extraction:** Parse Twitter's API/embed pages to extract .m3u8 or .mp4 URLs
-  - Option A: Use `yt-dlp` as a subprocess (battle-tested, supports Twitter)
-  - Option B: Direct Twitter guest API calls (no dependencies, but fragile)
-  - **Recommendation:** Start with yt-dlp wrapper for reliability, add direct extraction later
-- **Server:** Express/Hono for the API
-- **Web UI:** Single HTML page, minimal JS, no framework needed
+- **Runtime:** Bun
+- **Video extraction:** Direct API calls per platform (no yt-dlp dependency)
+  - Twitter: Guest API / syndication API for video URLs
+  - YouTube: Direct stream extraction from YouTube pages
+- **Server:** Hono
+- **Web UI:** Single HTML page, minimal JS, no framework
 
 ## Architecture
 ```
-┌─────────────┐     ┌──────────────┐     ┌──────────┐
-│  Web UI     │────▶│  API Server  │────▶│  yt-dlp  │
-│  (HTML/JS)  │     │  (Hono/Bun)  │     │  (exec)  │
-└─────────────┘     └──────────────┘     └──────────┘
+┌─────────────┐     ┌──────────────┐     ┌──────────────────┐
+│  Web UI     │────▶│  API Server  │────▶│  Platform APIs    │
+│  (HTML/JS)  │     │  (Hono/Bun)  │     │  (Twitter/YT)    │
+└─────────────┘     └──────────────┘     └──────────────────┘
                            │
                     ┌──────┴──────┐
                     │  /downloads │
@@ -46,37 +50,14 @@ GET /api/download/:id/file
 Response: video file stream
 ```
 
-## File Structure
-```
-twitter-video-dl/
-├── package.json
-├── src/
-│   ├── index.ts          # Entry point, starts server
-│   ├── server.ts         # HTTP API routes
-│   ├── downloader.ts     # yt-dlp wrapper logic
-│   └── cli.ts            # CLI interface
-├── public/
-│   └── index.html        # Web UI
-├── downloads/            # Temp storage (auto-cleanup)
-└── README.md
-```
-
-## Agent Delegation Plan
-1. **Agent 1 — Backend:** Build server.ts + downloader.ts (API + yt-dlp integration)
-2. **Agent 2 — Frontend:** Build the web UI (public/index.html)
-3. **Agent 3 — CLI:** Build cli.ts
-4. **Agent 4 — Integration & Testing:** Wire everything together, test end-to-end
-
 ## Success Criteria
-- Paste a Twitter URL → get the video file
-- Works with tweets containing single videos, GIFs, and multi-video posts
-- Clean error handling (private tweets, deleted posts, invalid URLs)
+- Paste a video URL → get the video file
+- Works across all three supported platforms
+- Clean error handling (private content, deleted posts, invalid URLs)
 - Response time < 10s for typical videos
 
-## Future (post-MVP)
+## Future
 - Quality selection (720p, 1080p, etc.)
-- x402 paid endpoint
-- Support for more platforms (Instagram, TikTok, etc.)
+- More platforms (Instagram, TikTok, etc.)
 - Thumbnail extraction
 - Batch downloads
-```
